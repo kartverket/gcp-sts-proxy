@@ -9,34 +9,24 @@ import (
 	"github.com/kartverket/gcp-sts-proxy/token"
 )
 
-type config struct {
-	tokenFile        string
-	audience         string
-	impersonationURL string
-	port             string
-}
-
 func main() {
-	cfg := config{
-		tokenFile:        getEnv("TOKEN_FILE", "/var/run/secrets/tokens/gcp-ksa/token", false),
-		audience:         getEnv("AUDIENCE", "", true),
-		impersonationURL: getEnv("IMPERSONATION_URL", "", false),
-		port:             getEnv("PORT", "8080", false),
-	}
-
 	// set log output format to json
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
 	tokenProvider := token.NewProvider(token.Config{
-		TokenFile:        cfg.tokenFile,
-		Audience:         cfg.audience,
-		ImpersonationURL: cfg.impersonationURL,
+		TokenFile:        getEnv("TOKEN_FILE", "/var/run/secrets/tokens/gcp-ksa/token", false),
+		Audience:         getEnv("AUDIENCE", "", true),
+		ImpersonationURL: getEnv("IMPERSONATION_URL", "", false),
 	})
 
 	server := server.New(server.Config{
-		Port: cfg.port,
+		Port: getEnv("PORT", "8080", false),
 	}, tokenProvider)
-	server.Start()
+
+	err := server.Start()
+	if err != nil {
+		slog.Error("failed to start server", "error", err.Error())
+	}
 }
 
 func getEnv(key, fallback string, required bool) string {
