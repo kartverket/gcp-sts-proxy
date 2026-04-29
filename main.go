@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"log/slog"
 	"os"
 
@@ -26,6 +25,7 @@ func main() {
 	err := server.Start()
 	if err != nil {
 		slog.Error("failed to start server", "error", err.Error())
+		os.Exit(1)
 	}
 }
 
@@ -33,8 +33,12 @@ func getEnv(key, fallback string, required bool) string {
 	if v := os.Getenv(key); v != "" {
 		return v
 	}
+
 	if required {
-		log.Fatalf("required env var %s not set", key)
+		slog.Error("required env var not set", "key", key)
+		os.Exit(1)
 	}
+
+	slog.Info("no value provided for env var, setting default", "key", key, "value", fallback)
 	return fallback
 }
