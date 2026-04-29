@@ -18,7 +18,7 @@ func main() {
 	cfg := config{
 		tokenFile:        getEnv("TOKEN_FILE", "/var/run/secrets/tokens/gcp-ksa/token", false),
 		audience:         getEnv("AUDIENCE", "", true),
-		impersonationURL: getEnv("SERVICE_ACCOUNT_IMPERSONATION_URL", "", false),
+		impersonationURL: getEnv("IMPERSONATION_URL", "", false),
 		port:             getEnv("PORT", "8080", false),
 	}
 
