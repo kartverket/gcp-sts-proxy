@@ -3,8 +3,10 @@ package main
 import (
 	"log"
 	"log/slog"
-	"net/http"
 	"os"
+
+	"github.com/kartverket/gcp-sts-proxy/server"
+	"github.com/kartverket/gcp-sts-proxy/token"
 )
 
 type config struct {
@@ -22,16 +24,19 @@ func main() {
 		port:             getEnv("PORT", "8080", false),
 	}
 
+	// set log output format to json
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		proxyHandler(w, r, &cfg)
+	tokenProvider := token.NewProvider(token.Config{
+		TokenFile:        cfg.tokenFile,
+		Audience:         cfg.audience,
+		ImpersonationURL: cfg.impersonationURL,
 	})
 
-	slog.Info("starting server", "port", cfg.port)
-	log.Fatal(http.ListenAndServe(":"+cfg.port, mux))
+	server := server.New(server.Config{
+		Port: cfg.port,
+	}, tokenProvider)
+	server.Start()
 }
 
 func getEnv(key, fallback string, required bool) string {
