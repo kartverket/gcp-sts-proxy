@@ -12,6 +12,11 @@ import (
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	tokenSource, err := google.DefaultTokenSource(
 		context.Background(),
 		"https://www.googleapis.com/auth/cloud-platform",
@@ -19,11 +24,6 @@ func main() {
 	if err != nil {
 		slog.Error("failed to init token provider", "error", err.Error())
 		os.Exit(1)
-	}
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
 	}
 
 	http.HandleFunc("/", proxyHandler(tokenSource))

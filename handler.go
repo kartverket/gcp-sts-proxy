@@ -5,11 +5,16 @@ import (
 	"log/slog"
 	"maps"
 	"net/http"
+	"time"
 
 	"golang.org/x/oauth2"
 )
 
 func proxyHandler(tokenSource oauth2.TokenSource) http.HandlerFunc {
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		slog.Info("request", "url", r.URL.String(), "method", r.Method)
 
@@ -28,7 +33,7 @@ func proxyHandler(tokenSource oauth2.TokenSource) http.HandlerFunc {
 
 		req, err := http.NewRequestWithContext(r.Context(), r.Method, url, r.Body)
 		if err != nil {
-			slog.Error("failed to creat request", "error", err.Error())
+			slog.Error("failed to create request", "error", err.Error())
 			http.Error(w, "failed to create request", http.StatusInternalServerError)
 			return
 		}
@@ -36,14 +41,13 @@ func proxyHandler(tokenSource oauth2.TokenSource) http.HandlerFunc {
 		maps.Copy(req.Header, r.Header)
 		req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := client.Do(req)
 		if err != nil {
 			http.Error(w, "upstream error: "+err.Error(), http.StatusBadGateway)
 			return
 		}
 		defer resp.Body.Close()
 
-		// copy response headers and body
 		for key, vals := range resp.Header {
 			for _, v := range vals {
 				w.Header().Add(key, v)
