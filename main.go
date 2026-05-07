@@ -1,44 +1,37 @@
 package main
 
 import (
+	"context"
 	"log/slog"
+	"net/http"
 	"os"
 
-	"github.com/kartverket/gcp-sts-proxy/server"
-	"github.com/kartverket/gcp-sts-proxy/token"
+	"golang.org/x/oauth2/google"
 )
 
 func main() {
-	// set log output format to json
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
-	tokenProvider := token.NewProvider(token.Config{
-		TokenFile:        getEnv("TOKEN_FILE", "/var/run/secrets/tokens/gcp-ksa/token", false),
-		Audience:         getEnv("AUDIENCE", "", true),
-		ImpersonationURL: getEnv("IMPERSONATION_URL", "", false),
-	})
+	tokenSource, err := google.DefaultTokenSource(
+		context.Background(),
+		"https://www.googleapis.com/auth/cloud-platform",
+	)
+	if err != nil {
+		slog.Error("failed to init token provider", "error", err.Error())
+		os.Exit(1)
+	}
 
-	server := server.New(server.Config{
-		Port: getEnv("PORT", "8080", false),
-	}, tokenProvider)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
-	err := server.Start()
+	http.HandleFunc("/", proxyHandler(tokenSource))
+
+	slog.Info("starting server", "port", port)
+	err = http.ListenAndServe(":"+port, nil)
 	if err != nil {
 		slog.Error("failed to start server", "error", err.Error())
 		os.Exit(1)
 	}
-}
-
-func getEnv(key, fallback string, required bool) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-
-	if required {
-		slog.Error("required env var not set", "key", key)
-		os.Exit(1)
-	}
-
-	slog.Info("no value provided for env var, setting default", "key", key, "value", fallback)
-	return fallback
 }
