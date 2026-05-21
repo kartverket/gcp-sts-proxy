@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: gcp-sts-proxy
+  title: GCP STS proxy
+  description: Intern SKOOP komponent for å håndtere Googles STS-flyt mot Google
+    Cloud Storage fra applikasjoner som ikke støtter den.
+spec:
+  type: service
+  owner: group:default/skoop
+  lifecycle: production
+  system: system:default/skoop
