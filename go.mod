@@ -1,6 +1,6 @@
 module github.com/kartverket/gcp-sts-proxy
 
-go 1.26.0
+go 1.27.2
 
 require golang.org/x/oauth2 v0.37.0
 
